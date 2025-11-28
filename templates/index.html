@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crypto UI</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h1>Encryption System</h1>
+
+    <div class="section">
+        <h3>Select Algorithm</h3>
+        <label>
+            <input type="radio" name="algo" value="RSA" checked> RSA
+        </label>
+    </div>
+
+    <h3>Generate RSA Keys</h3>
+    <form method="get" action="/enterprimes">
+        <button type="submit">Generate Keys</button>
+    </form>
+
+
+    <h3>Encrypt File</h3>
+    <form method="post" action="/encryptRSA" enctype="multipart/form-data">
+        <label>Select file to encrypt:</label>
+        <input type="file" name="input_file" required>
+        <button type="submit">Encrypt</button>
+    </form>
+
+    <h3>Decrypt File</h3>
+    <form method="post" action="/decryptRSA" enctype="multipart/form-data">
+        <label>Select encrypted file:</label>
+        <input type="file" name="input_file" required>
+        <button type="submit">Decrypt</button>
+    </form>
+</body>
+</html>
