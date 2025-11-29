@@ -10,5 +10,9 @@ ALGO_UI_REQUIREMENTS = {
     "DES": {
         "encrypt": None,
         "decrypt": None
+    },
+    "TripleDES": {
+        "encrypt": None,
+        "decrypt": None
     }
 }
