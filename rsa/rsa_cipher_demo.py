@@ -32,7 +32,7 @@ class RSADemo:
         public_key = (e,n)
         private_key = (d,n)
 
-        return public_key, private_key
+        return public_key, private_key, p, q, phi
 
     def Encrypt(plaintext:str, public_key):
         e, n = public_key
