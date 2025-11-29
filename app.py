@@ -1,12 +1,13 @@
-from routing_table import ALGO_UI_REQUIREMENTS
 from rsa.rsa_cipher import GenerateKeys, Encrypt, Decrypt
 from rsa.rsa_cipher_demo import RSADemo
-from flask import Flask, redirect, render_template, request, jsonify, send_file, session
+from flask import Flask, redirect, render_template, request, send_file, session
 import os
 
 app = Flask(__name__)
 app.secret_key = "1343"
 
+CURRENT_PUBLIC_KEY = None 
+CURRENT_PRIVATE_KEY = None
 OUTPUT = "output"
 
 rsacipherdemo = RSADemo
@@ -52,85 +53,57 @@ def set_algorithms():
     algo = request.form.get("algo", "RSA")
     session["algorithm"] = algo
     return render_template("index.html", selected_algo=algo)
-
-##### GOI CAC THUAT TOAN KHAC TAI DAY ######
-@app.route("/encrypt_now", methods=["POST"])
-def encrypt_now():
-    algo = session.get("algorithm", "RSA")
-    ui_page = ALGO_UI_REQUIREMENTS.get(algo, {}).get("encrypt")
-    if ui_page:
-        return render_template(ui_page)
     
-    if algo == "AES":
-        #### TO DO ENCRYPT AES ####
-        return "AES"
-    elif algo == "DES":
-        #### TO DO ENCRYPT DES ####
-        return "DES"
-    elif algo == "TripleDES":
-        #### TO DO ENCRYPT TRIPLE DES ####
-        return "TRIPLE"
-    else:
-        return "Algorithm not supported"
-
-##### GOI CAC THUAT TOAN KHAC TAI DAY ######
-@app.route("/decrypt_now", methods=["POST"])
-def decrypt_now():
-    algo = session.get("algorithm", "RSA")
-    ui_page = ALGO_UI_REQUIREMENTS.get(algo, {}).get("decrypt")
-    
-    if(ui_page):
-        return render_template(ui_page)
-    
-    if algo == "AES":
-        #### TO DO DECRYPT AES ####
-        return "AES"
-    elif algo == "DES":
-        #### TO DO DECRYPT DES ####
-        return "DES"
-    elif algo == "TripleDES":
-        #### TO DO DECRYPT TRIPLE DES ####
-        return "TRIPLE"
-    else:
-        return "Algorithm not supported"
-    
-###### RSA ONLY - ENCRYPT USING KEY PROVIDED #######
+###### ENCRYPT USING KEY PROVIDED #######
 @app.route("/encrypt_with_key", methods=["POST"])
 def encrypt_with_key():
-    e = int(request.form["e"])
-    n = int(request.form["n"])
-    public_key = (e, n)
-    
+    algo = session.get("algorithm", "RSA")
     file  = request.files["input_file"]
     plaintext = file.read().decode("utf-8")
-
-    cipher_block = rsacipherdemo.Encrypt(plaintext, public_key)
-
     out_path = os.path.join(OUTPUT, "encrypted.txt")
 
-    with open(out_path,"w") as f:
-        f.write(" ".join(str(x) for x in cipher_block))
+    if algo == "RSA":
+        global CURRENT_PUBLIC_KEY 
+        if CURRENT_PUBLIC_KEY is None: 
+            return {"error": "No public key"}
+        cipher_block = rsacipherdemo.Encrypt(plaintext, CURRENT_PUBLIC_KEY)
+        with open(out_path,"w") as f:
+            f.write(" ".join(str(x) for x in cipher_block))
+        return send_file(out_path, as_attachment=True)
+    
+    # elif algo == "AES": #
 
+    else:
+        return {"error": "Algorithm not supported"}
+    
     return send_file(out_path, as_attachment=True)
 
-###### RSA ONLY - DECRYPT USING KEY PROVIDED #######
+###### DECRYPT USING KEY PROVIDED #######
 @app.route("/decrypt_with_key", methods=["POST"])
 def decrypt_with_key():
-    d = int(request.form["d"])
-    n = int(request.form["n"])
-    private_key = (d, n)
-    
-    file  = request.files["input_file"]
+    algo = session.get("algorithm", "RSA")
+    file = request.files["input_file"]
     cipher_text = file.read().decode("utf-8")
-
-    cipher_blocks = [int(x) for x in cipher_text.split(" ")]
-    plaintext = rsacipherdemo.Decrypt(cipher_blocks, private_key)
-
     out_path = os.path.join(OUTPUT, "decrypted.txt")
 
-    with open(out_path,"w") as f:
-        f.write(str(plaintext))
+    if algo == "RSA":
+        global CURRENT_PRIVATE_KEY 
+        if CURRENT_PRIVATE_KEY is None: 
+            return {"error": "No private key"}
 
+        cipher_blocks = [int(x) for x in cipher_text.split(" ")]
+        plaintext = rsacipherdemo.Decrypt(cipher_blocks, CURRENT_PRIVATE_KEY)
+
+        with open(out_path,"w") as f:
+            f.write(str(plaintext))
+
+        return send_file(out_path, as_attachment=True)
+    
+    # elif algo == "AES": #
+
+    else:
+        return {"error": "Algorithm not supported"}
+    
     return send_file(out_path, as_attachment=True)
 
 if __name__ == "__main__":

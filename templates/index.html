@@ -28,12 +28,16 @@
     </form>
 
     <h3>Encrypt File</h3>
-    <form method="post" action="/encrypt_now" enctype="multipart/form-data">
+    <form method="post" action="/encrypt_with_key" enctype="multipart/form-data">
+        <label>Select file to encrypt:</label>
+        <input type="file" name="input_file" required>
         <button type="submit">Encrypt</button>
     </form>
 
     <h3>Decrypt File</h3>
-    <form method="post" action="/decrypt_now" enctype="multipart/form-data">
+    <form method="post" action="/decrypt_with_key" enctype="multipart/form-data">
+        <label>Select encrypted file:</label> 
+        <input type="file" name="input_file" required>
         <button type="submit">Decrypt</button>
     </form>
 </body>
