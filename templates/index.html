@@ -13,7 +13,9 @@
         <label>
             <input type="radio" name="algo" value="RSA" checked> RSA
         </label>
-
+        <label>
+            <input type="radio" name="algo" value="AES" checked> AES
+        </label>
         <!-- THEM THUAT TOAN MOI VO DAY -->
         
         <button type="submit">Confirm Algorithm</button>
@@ -26,12 +28,12 @@
     </form>
 
     <h3>Encrypt File</h3>
-    <form method="post" action="/choose_encrypt" enctype="multipart/form-data">
+    <form method="post" action="/encrypt_now" enctype="multipart/form-data">
         <button type="submit">Encrypt</button>
     </form>
 
     <h3>Decrypt File</h3>
-    <form method="post" action="/choose_decrypt" enctype="multipart/form-data">
+    <form method="post" action="/decrypt_now" enctype="multipart/form-data">
         <button type="submit">Decrypt</button>
     </form>
 </body>

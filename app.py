@@ -53,33 +53,14 @@ def set_algorithms():
     session["algorithm"] = algo
     return render_template("index.html", selected_algo=algo)
 
-##### IF USER CHOOSE TO ENCRYPT USING THE SELECTED ALGORITHM ######
-@app.route("/choose_encrypt", methods=["POST"])
-def choose_encrypt():
-    algo = session.get("algorithm", "RSA")
-    ui_page = ALGO_UI_REQUIREMENTS.get(algo, {}).get("encrypt")
-    
-    if(ui_page):
-        return render_template(ui_page)
-    
-    return redirect("/encrypt_now")
-
-##### IF USER CHOOSE TO DECRYPT USING THE SELECTED ALGORITHM ######
-@app.route("/choose_decrypt", methods=["POST"])
-def choose_decrypt():
-    algo = session.get("algorithm", "RSA")
-    ui_page = ALGO_UI_REQUIREMENTS.get(algo, {}).get("decrypt")
-    
-    if(ui_page):
-        return render_template(ui_page)
-    
-    return redirect("/decrypt_now")
-
 ##### GOI CAC THUAT TOAN KHAC TAI DAY ######
 @app.route("/encrypt_now", methods=["POST"])
 def encrypt_now():
-    algo = session.get("algorithm")
-
+    algo = session.get("algorithm", "RSA")
+    ui_page = ALGO_UI_REQUIREMENTS.get(algo, {}).get("encrypt")
+    if ui_page:
+        return render_template(ui_page)
+    
     if algo == "AES":
         #### TO DO ENCRYPT AES ####
         return "AES"
@@ -95,8 +76,12 @@ def encrypt_now():
 ##### GOI CAC THUAT TOAN KHAC TAI DAY ######
 @app.route("/decrypt_now", methods=["POST"])
 def decrypt_now():
-    algo = session.get("algorithm")
-
+    algo = session.get("algorithm", "RSA")
+    ui_page = ALGO_UI_REQUIREMENTS.get(algo, {}).get("decrypt")
+    
+    if(ui_page):
+        return render_template(ui_page)
+    
     if algo == "AES":
         #### TO DO DECRYPT AES ####
         return "AES"
