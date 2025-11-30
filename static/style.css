@@ -1,0 +1,67 @@
+body {
+    font-family: Arial, sans-serif;
+    background: #f3f3f3;
+    margin: 0;
+    padding: 0;
+}
+
+/* Center card */
+.container {
+    max-width: 600px;
+    margin: 40px auto;
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 0 12px rgba(0,0,0,0.15);
+}
+
+/* Center header */
+h1 {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+/* Vertical algorithm list */
+.algo-select label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+/* Make forms look cleaner */
+form {
+    margin-bottom: 25px;
+}
+
+/* Buttons */
+button {
+    background: #4A90E2;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    margin-top: 10px;
+}
+
+button:hover {
+    background: #3c7ac2;
+}
+
+/* Inputs */
+input[type="file"] {
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.centering {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.error-msg {
+    color: red;
+    font-weight: bold;
+    margin-bottom: 10px;
+}

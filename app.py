@@ -1,5 +1,6 @@
 from rsa.rsa_cipher import GenerateKeys, Encrypt, Decrypt
 from rsa.rsa_cipher_demo import RSADemo
+from des.des_cipher import DESDemo
 from flask import Flask, redirect, render_template, request, send_file, session
 import os
 
@@ -8,9 +9,13 @@ app.secret_key = "1343"
 
 CURRENT_PUBLIC_KEY = None 
 CURRENT_PRIVATE_KEY = None
+CURRENT_DES_KEY = None
+DEFAULT_KEY = None
+
 OUTPUT = "output"
 
 rsacipherdemo = RSADemo
+descipherdemo = DESDemo
 
 os.makedirs(OUTPUT, exist_ok=True)
 
@@ -30,8 +35,15 @@ def generate_keys_manual():
     global CURRENT_PUBLIC_KEY, CURRENT_PRIVATE_KEY
     p = int(request.form["p"])
     q = int(request.form["q"])
+    
+    try:
+        CURRENT_PUBLIC_KEY, CURRENT_PRIVATE_KEY, p_val, q_val, phi_val = rsacipherdemo.GenerateKeys(p, q)
+    except ValueError as err:
+        return render_template(
+            "/RSA_templates/enterprimes.html",
+            error=str(err)
+        )
 
-    CURRENT_PUBLIC_KEY, CURRENT_PRIVATE_KEY, p_val, q_val, phi_val = rsacipherdemo.GenerateKeys(p, q)
     e_val,n_val = CURRENT_PUBLIC_KEY
     d_val,n_val = CURRENT_PRIVATE_KEY
 
@@ -59,22 +71,39 @@ def set_algorithms():
 def encrypt_with_key():
     algo = session.get("algorithm", "RSA")
     file  = request.files["input_file"]
+
     plaintext = file.read().decode("utf-8")
-    out_path = os.path.join(OUTPUT, "encrypted.txt")
 
-    if algo == "RSA":
-        global CURRENT_PUBLIC_KEY 
-        if CURRENT_PUBLIC_KEY is None: 
-            return {"error": "No public key"}
-        cipher_block = rsacipherdemo.Encrypt(plaintext, CURRENT_PUBLIC_KEY)
-        with open(out_path,"w") as f:
-            f.write(" ".join(str(x) for x in cipher_block))
-        return send_file(out_path, as_attachment=True)
-    
-    # elif algo == "AES": #
+    out_path = os.path.join(OUTPUT, f"{algo}encrypted.txt")
 
-    else:
-        return {"error": "Algorithm not supported"}
+    match algo:
+        case "RSA":
+            global CURRENT_PUBLIC_KEY 
+            if CURRENT_PUBLIC_KEY is None: 
+                return {"error": "No public key"}
+            cipher_block = rsacipherdemo.Encrypt(plaintext, CURRENT_PUBLIC_KEY)
+            with open(out_path,"w") as f:
+                f.write(" ".join(str(x) for x in cipher_block))
+            return send_file(out_path, as_attachment=True)
+        
+        case "DES":
+            key_str = "nhauyen"
+            key_bytes = key_str.encode('utf-8')
+
+            if len(key_bytes) < 8:
+                key_bytes = key_bytes + b'\x00' * (8 - len(key_bytes))
+            DEFAULT_KEY = key_bytes
+            CURRENT_DES_KEY = DEFAULT_KEY
+
+            ciphertext = descipherdemo.Encrypt(plaintext, CURRENT_DES_KEY)
+            with open(out_path, "w", encoding="utf-8") as f:
+                f.write(ciphertext)
+            return send_file(out_path, as_attachment=True)
+        
+        # case "AES": #
+
+        case _:
+            return {"error": "Algorithm not supported"}
     
     return send_file(out_path, as_attachment=True)
 
@@ -83,27 +112,43 @@ def encrypt_with_key():
 def decrypt_with_key():
     algo = session.get("algorithm", "RSA")
     file = request.files["input_file"]
+
     cipher_text = file.read().decode("utf-8")
-    out_path = os.path.join(OUTPUT, "decrypted.txt")
 
-    if algo == "RSA":
-        global CURRENT_PRIVATE_KEY 
-        if CURRENT_PRIVATE_KEY is None: 
-            return {"error": "No private key"}
+    out_path = os.path.join(OUTPUT, f"{algo}_decrypted.txt")
 
-        cipher_blocks = [int(x) for x in cipher_text.split(" ")]
-        plaintext = rsacipherdemo.Decrypt(cipher_blocks, CURRENT_PRIVATE_KEY)
+    match algo:
+        case "RSA":
+            global CURRENT_PRIVATE_KEY 
+            if CURRENT_PRIVATE_KEY is None: 
+                return {"error": "No private key"}
 
-        with open(out_path,"w") as f:
-            f.write(str(plaintext))
+            cipher_blocks = [int(x) for x in cipher_text.split(" ")]
+            plaintext = rsacipherdemo.Decrypt(cipher_blocks, CURRENT_PRIVATE_KEY)
 
-        return send_file(out_path, as_attachment=True)
-    
-    # elif algo == "AES": #
+            with open(out_path,"w") as f:
+                f.write(str(plaintext))
 
-    else:
-        return {"error": "Algorithm not supported"}
-    
+            return send_file(out_path, as_attachment=True)
+        
+        case "DES":
+            key_str = "nhauyen"
+            key_bytes = key_str.encode('utf-8')
+
+            if len(key_bytes) < 8:
+                key_bytes = key_bytes + b'\x00' * (8 - len(key_bytes))
+            DEFAULT_KEY = key_bytes
+            CURRENT_DES_KEY = DEFAULT_KEY
+            plaintext = descipherdemo.Decrypt(cipher_text, CURRENT_DES_KEY)
+            with open(out_path, "w", encoding="utf-8") as f:
+                f.write(plaintext)
+            return send_file(out_path, as_attachment=True)
+
+        # case "AES": #
+
+        case _:
+            return {"error": "Algorithm not supported"}
+        
     return send_file(out_path, as_attachment=True)
 
 if __name__ == "__main__":
