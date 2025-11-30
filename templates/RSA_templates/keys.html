@@ -16,7 +16,7 @@
     <p>Your public key is the pair of E and N</p>
     <p><b>Public Key:</b> (E, N) ----- {{ public_key }}</p>
     <br>
-    <p>By using extended Euclidian algorithm, the private key, D, is {{ d }}</p>
+    <p>The private exponent D must satisfy this equation: (D x E) mod(PHI) = 1 <=> (D x {{ e }}) mod({{phi}}) = 1 => D = {{ d }}</p>
     <p>Your private key is the pair of D and N</p>
     <p><b>Private Key:</b> (D, N) ----- {{ private_key }}</p>
 
