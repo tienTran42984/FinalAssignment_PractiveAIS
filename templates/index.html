@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Crypto UI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    let algoRadios = document.querySelectorAll('input[name="algo"]');
+    let form = document.querySelector(".algo-select");
+
+    algoRadios.forEach(radio => {
+        radio.addEventListener("change", function () {
+            form.submit();
+        });
+    });
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    let algoRadios = document.querySelectorAll('input[name="algo"]');
+    let rsaSection = document.getElementById("rsa-section");
+
+    function updateRSASection() {
+        let selected = document.querySelector('input[name="algo"]:checked').value;
+
+        if (selected === "RSA") {
+            rsaSection.style.display = "block";
+        } else {
+            rsaSection.style.display = "none";
+        }
+    }
+
+    updateRSASection();
+
+    algoRadios.forEach(radio => {
+        radio.addEventListener("change", updateRSASection);
+    });
+});
+</script>
+
+<body>
+    <div class="container">
+        <h1>Encryption System</h1>
+        
+        {% with messages = get_flashed_messages(with_categories=True) %}
+            {% for category, msg in messages %}
+                <div class="error-msg {{ category }}">{{ msg }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <!--LIST CAC THUAT TOAN-->
+        <form action="/set_algorithm" method="post" class="algo-select">
+            <label>
+                <input type="radio" name="algo" value="RSA"
+                    {% if selected_algo == 'RSA' %}checked{% endif %}> RSA
+            </label>
+
+            <label>
+                <input type="radio" name="algo" value="AES"
+                    {% if selected_algo == 'AES' %}checked{% endif %}> AES
+            </label>
+
+            <label>
+                <input type="radio" name="algo" value="DES"
+                    {% if selected_algo == 'DES' %}checked{% endif %}> DES
+            </label>
+
+             <label>
+                <input type="radio" name="algo" value="TripleDES"
+                    {% if selected_algo == 'TripleDES' %}checked{% endif %}> Triple DES
+            </label>
+            <!-- THEM THUAT TOAN MOI VO DAY -->
+            
+        </form>
+
+        <div id="rsa-section">
+            <!--RSA ONLY - GENERATE KEY-->
+            <h3>Generate RSA Keys</h3>
+            <form method="get" action="/enterprimes">
+                <button type="submit">Generate Keys</button>
+            </form>
+        </div>
+
+        <h3>Encrypt File</h3>
+        <form method="post" action="/encrypt_with_key" enctype="multipart/form-data">
+            <label>Select file to encrypt:</label>
+            <input type="file" name="input_file" required>
+            <button type="submit">Encrypt</button>
+        </form>
+
+        <h3>Decrypt File</h3>
+        <form method="post" action="/decrypt_with_key" enctype="multipart/form-data">
+            <label>Select encrypted file:</label> 
+            <input type="file" name="input_file" required>
+            <button type="submit">Decrypt</button>
+        </form>
+    </div>
+</body>
+</html>
