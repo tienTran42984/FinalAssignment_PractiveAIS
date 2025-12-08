@@ -1,24 +1,25 @@
 from cipher.rsa.rsa_cipher import GenerateKeys, Encrypt, Decrypt
 from cipher.rsa.rsa_cipher_demo import RSADemo
 from cipher.des.des_cipher import DESDemo
-from flask import Flask, flash, redirect, render_template, request, send_file, session
+from cipher.triple_des.triple_des_cipher import TripleDESDemo
 from cipher.aes.aes_cipher import AESCipher
+from flask import Flask, flash, redirect, render_template, request, send_file, session
 import os
 
 app = Flask(__name__)
 app.secret_key = "1343"
-aes_cipher = AESCipher("my_secret_key123")
 
-CURRENT_PUBLIC_KEY = None 
-CURRENT_PRIVATE_KEY = None
+# Khởi tạo các cipher
+aes_cipher = AESCipher("my_secret_key123")
+descipherdemo = DESDemo()
+tripledes_demo = TripleDESDemo()
+rsacipherdemo = RSADemo
+
+# Biến global lưu key
 CURRENT_DES_KEY = None
 DEFAULT_KEY = None
 
 OUTPUT = "output"
-
-rsacipherdemo = RSADemo
-descipherdemo = DESDemo
-
 os.makedirs(OUTPUT, exist_ok=True)
 
 ###### MAIN HOMEPAGE #######
@@ -34,25 +35,21 @@ def enter_primes():
 #### RSA ONLY - GENERATE PUBLIC AND PRIVATE KEY FOR RSA #####
 @app.route("/generate_keys_manual", methods=["POST"])
 def generate_keys_manual():
-    global CURRENT_PUBLIC_KEY, CURRENT_PRIVATE_KEY
     p = int(request.form["p"])
     q = int(request.form["q"])
     
     try:
-        CURRENT_PUBLIC_KEY, CURRENT_PRIVATE_KEY, p_val, q_val, phi_val = rsacipherdemo.GenerateKeys(p, q)
+        public_key_val, private_key_val, p_val, q_val, phi_val = rsacipherdemo.GenerateKeys(p, q)
     except ValueError as err:
-        return render_template(
-            "/RSA_templates/enterprimes.html",
-            error=str(err)
-        )
+        return render_template("/RSA_templates/enterprimes.html", error=str(err))
 
-    e_val,n_val = CURRENT_PUBLIC_KEY
-    d_val,n_val = CURRENT_PRIVATE_KEY
+    e_val,n_val = public_key_val
+    d_val,n_val = private_key_val
 
     return render_template(
         "/RSA_templates/keys.html",
-        public_key=CURRENT_PUBLIC_KEY,
-        private_key=CURRENT_PRIVATE_KEY,
+        public_key=public_key_val,
+        private_key=private_key_val,
         q = q_val,
         p = p_val,
         phi = phi_val,
@@ -67,26 +64,28 @@ def set_algorithms():
     algo = request.form.get("algo", "RSA")
     session["algorithm"] = algo
     return render_template("index.html", selected_algo=algo)
-    
+
 ###### ENCRYPT USING KEY PROVIDED #######
 @app.route("/encrypt_with_key", methods=["POST"])
 def encrypt_with_key():
     algo = session.get("algorithm", "RSA")
-    session["used_algorithm"] = session["algorithm"]
+    session["used_algorithm"] = algo
 
     file  = request.files["input_file"]
     out_path = os.path.join(OUTPUT, f"{algo}_encrypted.txt")
 
     match algo:
         case "RSA":
-            global CURRENT_PUBLIC_KEY 
+            raw_key = request.form.get("public_key")
             plaintext = file.read().decode("utf-8")
-            if CURRENT_PUBLIC_KEY is None: 
+
+            e, n = map(int, raw_key.replace(" ", "").split(","))
+            public_key = (e, n)
+            if not public_key:
                 flash("You must generate an RSA key pair before encrypting.", "error")
                 return render_template("/RSA_templates/enterprimes.html")
             
-            cipher_block = rsacipherdemo.Encrypt(plaintext, CURRENT_PUBLIC_KEY)
-
+            cipher_block = rsacipherdemo.Encrypt(plaintext, public_key)
             with open(out_path,"w") as f:
                 f.write(" ".join(str(x) for x in cipher_block))
             return send_file(out_path, as_attachment=True)
@@ -95,33 +94,34 @@ def encrypt_with_key():
             key_str = "nhauyen"
             key_bytes = key_str.encode('utf-8')
             plaintext = file.read().decode("utf-8")
-
             if len(key_bytes) < 8:
-                key_bytes = key_bytes + b'\x00' * (8 - len(key_bytes))
-            DEFAULT_KEY = key_bytes
-            CURRENT_DES_KEY = DEFAULT_KEY
-
+                key_bytes += b'\x00' * (8 - len(key_bytes))
+            CURRENT_DES_KEY = key_bytes
             ciphertext = descipherdemo.Encrypt(plaintext, CURRENT_DES_KEY)
+            with open(out_path, "w", encoding="utf-8") as f:
+                f.write(ciphertext)
+            return send_file(out_path, as_attachment=True)
 
+        case "3DES":
+            # Triple DES EDE với 3 key cố định 8 bytes
+            k1 = b'key1key1'
+            k2 = b'key2key2'
+            k3 = b'key3key3'
+            plaintext = file.read().decode("utf-8")
+            ciphertext = tripledes_demo.Encrypt(plaintext, k1, k2, k3)
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(ciphertext)
             return send_file(out_path, as_attachment=True)
         
         case "AES": 
-            # Key cố định
             key_str = "mysecretkey12345"  # 16 bytes
             aes = AESCipher(key_str)
-
-            # AES hoạt động trên dữ liệu binary, KHÔNG decode UTF-8
             file.seek(0)
             plaintext_bytes = file.read()
-
             out_path = os.path.join(OUTPUT, f"{algo}_encrypted.bin")
             ciphertext_bytes = aes.encrypt(plaintext_bytes)
-
             with open(out_path, "wb") as f:
                 f.write(ciphertext_bytes)
-
             return send_file(out_path, as_attachment=True)
 
         case _:
@@ -134,7 +134,6 @@ def encrypt_with_key():
 def decrypt_with_key():
     algo = session.get("algorithm", "RSA")
     used_algo = session.get("used_algorithm")
-
     file = request.files["input_file"]   
     out_path = os.path.join(OUTPUT, f"{algo}_decrypted.txt")
 
@@ -144,51 +143,51 @@ def decrypt_with_key():
     
     match algo:
         case "RSA":
-            global CURRENT_PRIVATE_KEY 
+            raw_key = request.form.get("private_key")
+            d, n = map(int, raw_key.replace(" ", "").split(","))
+            
             cipher_text = file.read().decode("utf-8")
-            if CURRENT_PRIVATE_KEY is None: 
+            private_key = (d,n)
+
+            if not private_key:
                 flash("You must generate an RSA key pair before decrypting.", "error")
                 return render_template("/RSA_templates/enterprimes.html")
-
             cipher_blocks = [int(x) for x in cipher_text.split(" ")]
-            plaintext = rsacipherdemo.Decrypt(cipher_blocks, CURRENT_PRIVATE_KEY)
-
+            plaintext = rsacipherdemo.Decrypt(cipher_blocks, private_key)
             with open(out_path,"w") as f:
                 f.write(str(plaintext))
-
             return send_file(out_path, as_attachment=True)
         
         case "DES":
-            key_str = "nhauyen"
-            key_bytes = key_str.encode('utf-8')
-            cipher_text = file.read().decode("utf-8")
-
+            key_bytes = b'nhauyen'
             if len(key_bytes) < 8:
-                key_bytes = key_bytes + b'\x00' * (8 - len(key_bytes))
-            DEFAULT_KEY = key_bytes
-            CURRENT_DES_KEY = DEFAULT_KEY
-            plaintext = descipherdemo.Decrypt(cipher_text, CURRENT_DES_KEY)
+                key_bytes += b'\x00' * (8 - len(key_bytes))
+            cipher_text = file.read().decode("utf-8")
+            plaintext = descipherdemo.Decrypt(cipher_text, key_bytes)
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(plaintext)
             return send_file(out_path, as_attachment=True)
 
+        case "3DES":
+            k1 = b'key1key1'
+            k2 = b'key2key2'
+            k3 = b'key3key3'
+            cipher_text = file.read().decode("utf-8")
+            plaintext = tripledes_demo.Decrypt(cipher_text, k1, k2, k3)
+            with open(out_path, "w", encoding="utf-8") as f:
+                f.write(plaintext)
+            return send_file(out_path, as_attachment=True)
+        
         case "AES":
-            key_str = "mysecretkey12345"  #phải == key với encrypt
+            key_str = "mysecretkey12345"
             aes = AESCipher(key_str)
-
-            # AES là dữ liệu nhị phân > không decode UTF-8
             file.seek(0)
             cipher_bytes = file.read()
-
-            out_path = os.path.join(OUTPUT, f"{algo}_decrypted.txt")
             plain_bytes = aes.decrypt(cipher_bytes)
-
-            # decrypt ra text -> convert sang UTF-8
             with open(out_path, "w", encoding="utf-8") as f:
                 f.write(plain_bytes.decode("utf-8", errors="ignore"))
-
             return send_file(out_path, as_attachment=True)
-
+        
         case _:
             return {"error": "Algorithm not supported"}
         

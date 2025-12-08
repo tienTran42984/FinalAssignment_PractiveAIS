@@ -1,100 +1,186 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Crypto UI</title>
+    <title>Encryption System</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    let algoRadios = document.querySelectorAll('input[name="algo"]');
-    let form = document.querySelector(".algo-select");
-
-    algoRadios.forEach(radio => {
-        radio.addEventListener("change", function () {
-            form.submit();
-        });
-    });
-});
-
-document.addEventListener("DOMContentLoaded", function() {
-    let algoRadios = document.querySelectorAll('input[name="algo"]');
-    let rsaSection = document.getElementById("rsa-section");
-
-    function updateRSASection() {
-        let selected = document.querySelector('input[name="algo"]:checked').value;
-
-        if (selected === "RSA") {
-            rsaSection.style.display = "block";
-        } else {
-            rsaSection.style.display = "none";
-        }
-    }
-
-    updateRSASection();
-
-    algoRadios.forEach(radio => {
-        radio.addEventListener("change", updateRSASection);
-    });
-});
-</script>
 
 <body>
     <div class="container">
         <h1>Encryption System</h1>
+        <p class="subtitle">Secure your files with advanced encryption algorithms</p>
         
+        <!-- Flash messages -->
         {% with messages = get_flashed_messages(with_categories=True) %}
             {% for category, msg in messages %}
                 <div class="error-msg {{ category }}">{{ msg }}</div>
             {% endfor %}
         {% endwith %}
 
-        <!--LIST CAC THUAT TOAN-->
-        <form action="/set_algorithm" method="post" class="algo-select">
-            <label>
-                <input type="radio" name="algo" value="RSA"
-                    {% if selected_algo == 'RSA' %}checked{% endif %}> RSA
-            </label>
+        <!-- Algorithm Selection -->
+        <div class="section">
+            <div class="section-title">Select Algorithm</div>
+            <form action="/set_algorithm" method="post" class="algo-select">
+                <label>
+                    <input type="radio" name="algo" value="RSA"
+                        {% if selected_algo == 'RSA' %}checked{% endif %}>
+                    <span>RSA</span>
+                </label>
 
-            <label>
-                <input type="radio" name="algo" value="AES"
-                    {% if selected_algo == 'AES' %}checked{% endif %}> AES
-            </label>
+                <label>
+                    <input type="radio" name="algo" value="AES"
+                        {% if selected_algo == 'AES' %}checked{% endif %}>
+                    <span>AES</span>
+                </label>
 
-            <label>
-                <input type="radio" name="algo" value="DES"
-                    {% if selected_algo == 'DES' %}checked{% endif %}> DES
-            </label>
+                <label>
+                    <input type="radio" name="algo" value="DES"
+                        {% if selected_algo == 'DES' %}checked{% endif %}>
+                    <span>DES</span>
+                </label>
 
-             <label>
-                <input type="radio" name="algo" value="TripleDES"
-                    {% if selected_algo == 'TripleDES' %}checked{% endif %}> Triple DES
-            </label>
-            <!-- THEM THUAT TOAN MOI VO DAY -->
-            
-        </form>
+                <label>
+                    <input type="radio" name="algo" value="3DES"
+                        {% if selected_algo == '3DES' %}checked{% endif %}>
+                    <span>Triple DES</span>
+                </label>
+            </form>
+        </div>
 
-        <div id="rsa-section">
-            <!--RSA ONLY - GENERATE KEY-->
-            <h3>Generate RSA Keys</h3>
+        <!-- RSA Key Generation -->
+        <div id="rsa-section" style="display: none;">
+            <h3>🔑 Generate RSA Keys</h3>
+            <p style="font-size: 14px; color: #6b46c1; margin-bottom: 15px;">Generate a new pair of public and private keys for RSA encryption</p>
             <form method="get" action="/enterprimes">
                 <button type="submit">Generate Keys</button>
             </form>
         </div>
 
-        <h3>Encrypt File</h3>
-        <form method="post" action="/encrypt_with_key" enctype="multipart/form-data">
-            <label>Select file to encrypt:</label>
-            <input type="file" name="input_file" required>
-            <button type="submit">Encrypt</button>
-        </form>
+        <!-- Encrypt Section -->
+        <div class="section">
+            <div class="upload-section">
+                <h3 class="encrypt-icon">Encrypt File</h3>
+                <form id="encryptForm" method="post" action="/encrypt_with_key" enctype="multipart/form-data">
+                    <div class="file-input-wrapper">
+                        <label>Select file to encrypt:</label>
+                        <input type="file" name="input_file" required>
+                    </div>
+                    <button type="submit">Encrypt File</button>
+                </form>
+            </div>
+        </div>
 
-        <h3>Decrypt File</h3>
-        <form method="post" action="/decrypt_with_key" enctype="multipart/form-data">
-            <label>Select encrypted file:</label> 
-            <input type="file" name="input_file" required>
-            <button type="submit">Decrypt</button>
-        </form>
+        <!-- Decrypt Section -->
+        <div class="section">
+            <div class="upload-section">
+                <h3 class="decrypt-icon">Decrypt File</h3>
+                <form id="decryptForm" method="post" action="/decrypt_with_key" enctype="multipart/form-data">
+                    <div class="file-input-wrapper">
+                        <label>Select encrypted file:</label>
+                        <input type="file" name="input_file" required>
+                    </div>
+                    <button type="submit">Decrypt File</button>
+                </form>
+            </div>
+        </div>
     </div>
+
+    <!--Input RSA Key Model Section-->
+    <div id="rsaKeyModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title"></h3>
+
+            <form id="rsaKeyForm">
+                <label id="keyLabel"></label>
+                <textarea name="rsa_key" id="rsaKeyInput" required></textarea>
+
+                <div class="modal-buttons">
+                    <button type="button" id="cancelModal">Cancel</button>
+                    <button type="button" id="confirmKey">OK</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let algoRadios = document.querySelectorAll('input[name="algo"]');
+            let form = document.querySelector(".algo-select");
+            let rsaSection = document.getElementById("rsa-section");
+
+            function updateRSASection() {
+                let selected = document.querySelector('input[name="algo"]:checked').value;
+                rsaSection.style.display = selected === "RSA" ? "block" : "none";
+            }
+
+            updateRSASection();
+
+            algoRadios.forEach(radio => {
+                radio.addEventListener("change", function() {
+                    updateRSASection();
+                    form.submit();
+                });
+            });
+        });
+
+        document.addEventListener("DOMContentLoaded", function() {
+            let rsaModal = document.getElementById("rsaKeyModal");
+            let cancelModal = document.getElementById("cancelModal");
+            let confirmKey = document.getElementById("confirmKey");
+            let rsaKeyInput = document.getElementById("rsaKeyInput");
+            let modalTitle = document.getElementById("modal-title");
+            let keyLabel = document.getElementById("keyLabel");
+
+            let selectedForm = null;
+            let isEncrypt = false;
+
+            function isRSA() {
+                return document.querySelector('input[name="algo"]:checked').value === "RSA";
+            }
+            
+            cancelModal.addEventListener("click", function() {
+                rsaModal.style.display = "none";
+            });
+
+            document.getElementById("encryptForm").addEventListener("submit", function(e) {
+                if (isRSA()) {
+                    e.preventDefault();
+                    selectedForm = this;
+                    isEncrypt = true;
+
+                    modalTitle.textContent = "Enter RSA Public Key";
+                    keyLabel.textContent = "Public Key:";
+                    rsaModal.style.display = "block";
+                }
+            });
+
+            document.getElementById("decryptForm").addEventListener("submit", function(e) {
+                if (isRSA()) {
+                    e.preventDefault();
+                    selectedForm = this;
+                    isEncrypt = false;
+
+                    modalTitle.textContent = "Enter RSA Private Key";
+                    keyLabel.textContent = "Private Key:";
+                    rsaModal.style.display = "block";
+                }
+            });
+
+            confirmKey.addEventListener("click", function() {
+                key = rsaKeyInput.value.trim();
+                if (!key) return alert("Key is required!");
+
+                let hidden = document.createElement("input");
+                hidden.type = "hidden";
+                hidden.name = isEncrypt ? "public_key" : "private_key";
+                hidden.value = key;
+
+                selectedForm.appendChild(hidden);
+
+                rsaModal.style.display = "none";
+                selectedForm.submit();
+            });
+        });
+    </script>
 </body>
 </html>

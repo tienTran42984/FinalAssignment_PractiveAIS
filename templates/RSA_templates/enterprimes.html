@@ -17,20 +17,24 @@
         {% endwith %}
         
         <h1>Enter Two Prime Numbers</h1>
-        <form method="post" action="/generate_keys_manual" class="centering">
-            <label><b>Prime p:</b></label>
-            <input type="number" name="p" required><br><br>
+        
+        <form method="post" action="/generate_keys_manual">
+            <div class="form-group">
+                <label>Prime p:</label>
+                <input type="number" name="p" required>
+            </div>
 
-            <label><b>Prime q:</b></label>
-            <input type="number" name="q" required><br><br>
+            <div class="form-group">
+                <label>Prime q:</label>
+                <input type="number" name="q" required>
+            </div>
 
             <button type="submit">Compute Keys</button>
 
-            <div style="margin-top: 15px;">
-                <a href="/">Back</a>
+            <div class="back-link">
+                <a href="/">← Back to Home</a>
             </div>
         </form>
     </div>
-
 </body>
 </html>
